@@ -8,18 +8,21 @@ black,dark_blue,dark_purple,dark_green,brown,dark_gray,light_gray,white,red,oran
 
 function _init()
     debuginit()
-    debug = true
     plr = initplr()
     screen = {x=0,y=0,dx=0}
 end
 
 function _update()
     input()
+    -- plr.x = 5
+    -- plr.dx = 1
+    plr.update()
 end
 
 function _draw()
+    slowdowntimer=0
     cls()
-	rectfill(0,0,127,127,1)
+    rectfill(0,0,127,127,1)
     map(screen.x\8, screen.y\8, 0-screen.x%8, 0-screen.y%8, 17, 17)
     plr.draw()
     debugprint()
@@ -27,30 +30,108 @@ end
 
 function initplr()
     plr={
-		x=30,y=30,dx=0,dy=0,
+		x=0,y=0,dx=0,dy=0,
 		sprite=001,
 		w=8,h=8
 	}
     plr.draw = function(this)
         spr(plr.sprite, plr.x - screen.x, plr.y - screen.y)
-        -- pset(plr.x - screen.x, plr.y - screen.y, yellow)
     end
+    plr.update = function(this)
+        plr.dy += 1
+        plr.dx = min(max(plr.dx,-3),3)
+        plr.dy = min(max(plr.dy,-8),8)
+        local rx = plr.dx
+        local ry = plr.dy
+        local dist
+        while rx!=0 or ry!=0 do
+            dist=0
+            if rx > 0 then
+                debugtext(plr.x % 8 == 0)
+                if plr.x % 8 == 0 then
+                    if mapcollide(plr, right, 0) then
+                        plr.dx=0
+                        rx=0
+                        dist=0
+                    else
+                        dist = min(8,rx)
+                    end
+                else
+                    dist = 8 - (plr.x % 8)
+                end
+            elseif rx < 0 then
+                if plr.x % 8 == 0 then
+                    if mapcollide(plr, left, 0) then
+                        plr.dx=0
+                        rx=0
+                        dist=0
+                    else
+                        dist = max(-8,rx)
+                    end
+                else
+                    dist = 0 - (plr.x % 8)
+                end
+            else
+                dist = 0
+            end
+            rx -= dist
+            plr.x += dist
 
+            dist=0
+            if ry > 0 then
+                if plr.y % 8 == 0 then
+                    if mapcollide(plr, down, 0) then
+                        plr.dy=0
+                        ry=0
+                        dist=0
+                    else
+                        dist = min(8,ry)
+                    end
+                else
+                    dist = 8 - (plr.y % 8)
+                end
+            elseif ry < 0 then
+                if plr.y % 8 == 0 then
+                    if mapcollide(plr, up, 0) then
+                        plr.dy=0
+                        ry=0
+                        dist=0
+                    else
+                        dist = max(-8,ry)
+                    end
+                else
+                    dist = 0 - (plr.y % 8)
+                end
+            else
+                dist = 0
+            end
+            ry -= dist
+            plr.y += dist
+        end
+    end
 	return plr
 end	
 
 function input()
-    if btn(up) and (not mapcollide(plr, up, 0)) then
-        plr.y-=1
-    elseif btn(down) and (not mapcollide(plr, down, 0)) then
-        plr.y+=1
+    if btn(up) and mapcollide(plr, down, 0) then
+        plr.dy =- 8
+    elseif btn(down) then
+        plr.dy+=1
     end
-    if btn(left) and (not mapcollide(plr, left, 0)) then
-        plr.x-=1
-    elseif btn(right) and (not mapcollide(plr, right, 0)) then
-        plr.x+=1
+    if btn(left) then
+        plr.dx-=1
+    elseif btn(right) then
+        plr.dx+=1
+    elseif plr.dx > 0.5 then
+        plr.dx -= 0.5
+    elseif plr.dx < -0.5 then
+        plr.dx += 0.5
+    else
+        plr.dx=0
     end
-    
+
+    if (btnp(fire2)) toggledebug()
+
 end
 
 function mapcollide(obj, dir, flag)
@@ -105,6 +186,7 @@ function debuginit()
 	debug = false
 	debugboxlist = {}
 	debugpointlist = {}
+    debugtextlist = {}
 	
 	
 	--toggles debug information
@@ -120,18 +202,27 @@ function debuginit()
 	--adds a 1 sprite box to be
 	--shown when debug info is on
 	function debugbox(x,y,c)
-		c = c or 7
-		add(debugboxlist,{x*8,y*8,c})
+        if debug then
+		    c = c or 7
+		    add(debugboxlist,{x*8,y*8,c})
+        end
 	end
 	
 	
 	--adds a point to be shown
 	--when debug info is on
 	function debugpoint(x,y,c)
-		c = c or 8
-		add(debugpointlist,{x,y,c})
+        if debug then
+		    c = c or 8
+		    add(debugpointlist,{x,y,c})
+        end
 	end
 	
+    function debugtext(string)
+        if (debug) add(debugtextlist, {string, count(debugtextlist)*8})
+    end
+
+
 	
 	function debugprint()
 		if debug then
@@ -145,8 +236,11 @@ function debuginit()
 				pset(point[1]-screen.x,point[2]-screen.y,8)
 			end
 			debugpointlist = {}
-		
-		
+            
+            for line in all(debugtextlist) do
+                print(line[1], 0, line[2], white)
+            end
+            debugtextlist = {}
 		end
 	end
 end
