@@ -184,7 +184,7 @@ function input()
         plr.dx=0
     end
 
-    if (btnp(fire2)) toggledebug()
+    -- if (btnp(fire2)) toggledebug()
 
 end
 
