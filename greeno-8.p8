@@ -9,7 +9,7 @@ black,dark_blue,dark_purple,dark_green,brown,dark_gray,light_gray,white,red,oran
 function _init()
     score = 0
     maxscore = 0
-    plummeting = false
+    plummeting = 5
     plr = initplr()
     cam = initcam()
     debuginit()
@@ -21,7 +21,7 @@ function _update()
     input()
     plr.update()
     maxscore = max(score, maxscore)
-    if (maxscore > score) plummeting = true
+    if (maxscore > score) plummeting -= 1
     cam:chase(plr, 0, -32768.0, 0, -96)
 end
 
@@ -34,7 +34,7 @@ function _draw()
     end
     map(0, 3, 0, 24-cam.y, 17, 4)
     rectfill(0,0,7,7, dark_blue)
-    if (plummeting) color = red else color = white
+    if (plummeting < 3) color = red else color = white
     print("score: "..score, 1, 1, color)
     plr.draw()
     debugdraw()
@@ -52,7 +52,7 @@ function initplr()
     end
     plr.update = function(this)
         debugval("plr.x", plr.x)
-        if plummeting then
+        if plummeting<0 then
             if plr.x >= 64 and plr.x < 88 then
                 plr.dx += 2
             elseif plr.x >= 40 and plr.x<64 then
@@ -141,8 +141,8 @@ function initplr()
             score = (16 - plr.y)\24
             plr.coyoteframes += 1
 
-            if plummeting and score==0 then
-                plummeting = false
+            if plummeting<0 and score==0 then
+                plummeting = 5
                 maxscore = 0
             end
         end
