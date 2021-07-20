@@ -149,10 +149,10 @@ function input()
         plr.dx-=1
     elseif btn(right) then
         plr.dx+=1
-    elseif plr.dx > 0.5 then
-        plr.dx -= 0.5
+    elseif plr.dx > 0 then
+        plr.dx = max(plr.dx-1,0)
     elseif plr.dx < -0.5 then
-        plr.dx += 0.5
+        plr.dx = min(plr.dx+1,0)
     else
         plr.dx=0
     end
