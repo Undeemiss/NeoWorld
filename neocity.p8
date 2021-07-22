@@ -118,34 +118,26 @@ function initplr()
             dist=0
             if rx > 0 then
                 if plr.x % 8 == 0 then
-                    debugprint("check x+")
                     if plr.x >= xmax or mapcollide(plr, right, 0) then
-                        debugprint("wall")
                         plr.dx=0
                         rx=0
                         dist=0
                     else
-                        debugprint("no wall")
                         dist = min(8,rx)
                     end
                 else
-                    debugprint("no check x+")
                     dist = min(rx, 8 - (plr.x % 8))
                 end
             elseif rx < 0 then
                 if plr.x % 8 == 0 then
-                    debugprint("check x-")
                     if mapcollide(plr, left, 0) or plr.x <= xmin then
-                        debugprint("wall")
                         plr.dx=0
                         rx=0
                         dist=0
                     else
-                        debugprint("no wall")
                         dist = max(-8,rx)
                     end
                 else
-                    debugprint("no check x-")
                     dist = max(rx, 0 - (plr.x % 8))
                 end
             end
@@ -336,10 +328,6 @@ function mapcollide(obj, dir, flag)
 
     y1i = y1
     y2i = y2
-    if dir==left or dir==right then
-        debugbox(x1,y1)
-        debugbox(x2,y2)
-    end
 
     y1 = y1%3
     y2 = y2%3
@@ -347,12 +335,10 @@ function mapcollide(obj, dir, flag)
     for i=min(x1,x2), max(x1,x2) do
         for j=min(y1,y2), max(y1,y2) do
             if (fget(mget(i,j), flag)) then
-                debugprint("true")
                 return true
             end
         end
     end
-    debugprint("false")
     return false
 end
 
