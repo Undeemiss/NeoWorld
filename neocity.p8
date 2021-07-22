@@ -98,7 +98,7 @@ function initplr()
             end
         end
         if plr.coyoteframes > 0 then
-            plr.coyoteframes += 1
+            plr.coyoteframes -= 1
         end
         plr.dy += 1
         plr.dx = min(max(plr.dx,-3),3)
