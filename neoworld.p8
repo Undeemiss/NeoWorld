@@ -417,16 +417,10 @@ function mapcollide(obj, dir, flag)
     y1\=8
     x2\=8
     y2\=8
-
-    y1i = y1
-    y2i = y2
-
-    y1 = y1%3
-    y2 = y2%3
     
-    for i=min(x1,x2), max(x1,x2) do
-        for j=min(y1,y2), max(y1,y2) do
-            if (fget(mget(i,j), flag)) then
+    for i=x1,x2 do
+        for j=y1,y2 do
+            if (fget(mget(i+gm*16,j%3), flag)) then
                 return true
             end
         end
