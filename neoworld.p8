@@ -15,12 +15,19 @@ ymax = 16
 
 function _init()
     debuginit()
-    menu()
+    initmenu()
 end
 
-function menu()
-    chosen = false
-    while not chosen do
+function initmenu()
+    inmenu = true
+    menu = {}
+    menu.open = function()
+        inmenu = true
+    end
+    menu.draw = function()
+        print("menu.draw()", 0,0, white)
+    end
+    menu.update = function()
         if btn(down) then
             inithell()
         elseif btn(left) then
@@ -43,7 +50,7 @@ function initneo() --Generic initialization code for all three modes
         add(bgsigns, initbgsign(signtype))
     end
 
-    chosen = true
+    inmenu = false
 end
 
 function inithell() --Initializes the neohell gamemode
@@ -97,43 +104,50 @@ function initheaven() --Initializes the neocity gamemode
 end
 
 function _update()
-    input()
-    plr.update()
-    for bgsign in all(bgsigns) do
-        bgsign:update()
+    if inmenu then
+        menu.update()
+    else
+        input()
+        plr.update()
+        for bgsign in all(bgsigns) do
+            bgsign:update()
+        end
+        maxscore = max(score, maxscore)
+        if maxscore > score then
+            plummeting -= 1
+        elseif plummeting > 0 then
+            plummeting = 5
+        end
+        cam:chase(plr, 0, -32768.0, 0, -88)
     end
-    maxscore = max(score, maxscore)
-    if maxscore > score then
-        plummeting -= 1
-    elseif plummeting > 0 then
-        plummeting = 5
-    end
-    cam:chase(plr, 0, -32768.0, 0, -88)
 end
 
 function _draw()
     cls()
-
-    --BG Rendering
-    rectfill(0,0,127,127,bgcolor)
-    for bgsign in all(bgsigns) do
-        bgsign:draw()
+    if inmenu then
+        menu.draw()
+    else
+        --BG Rendering
+        rectfill(0,0,127,127,bgcolor)
+        for bgsign in all(bgsigns) do
+            bgsign:draw()
+        end
+    
+        --Level Rendering
+        for i=144,-24,-24 do
+            map(16*gm, 0, 0, i-cam.y%24, 17, 3)
+        end
+        map(16*gm, 3, 0, 24-cam.y, 17, 4)
+    
+        plr.draw()
+    
+        --UI Rendering
+        rectfill(0,120,128,128, black)
+        if (plummeting < 0) scorecolor = red else scorecolor = white
+        print("score:"..maxscore, 1, 122, scorecolor)
+        printr(gamename, 128, 122, scorecolor)
+        debugdraw()
     end
-
-    --Level Rendering
-    for i=144,-24,-24 do
-        map(16*gm, 0, 0, i-cam.y%24, 17, 3)
-    end
-    map(16*gm, 3, 0, 24-cam.y, 17, 4)
-
-    plr.draw()
-
-    --UI Rendering
-    rectfill(0,120,128,128, black)
-    if (plummeting < 0) scorecolor = red else scorecolor = white
-    print("score:"..maxscore, 1, 122, scorecolor)
-    printr(gamename, 128, 122, scorecolor)
-    debugdraw()
 end
 
 function initplr()
@@ -348,22 +362,25 @@ function initbgsign(signmode) --0=Neon Sign, 1=Cloud
 end
 
 function input()
-    if btn(fire1) and (plr.coyoteframes > 0 or plr.y==16 or mapcollide(plr, down, 0)) then
-        plr.coyoteframes = 0
-        plr.dy = -8
-    end
-    if btn(left) and not btn(right) then
-        plr.dx-=1
-    elseif btn(right) and not btn(left) then
-        plr.dx+=1
-    elseif plr.dx > 0 then
-        plr.dx = max(plr.dx-1,0)
-    elseif plr.dx < -0.5 then
-        plr.dx = min(plr.dx+1,0)
+    if btn(fire2) and maxscore==0 then
+        menu.open()
     else
-        plr.dx=0
+        if btn(fire1) and (plr.coyoteframes > 0 or plr.y==16 or mapcollide(plr, down, 0)) then
+            plr.coyoteframes = 0
+            plr.dy = -8
+        end
+        if btn(left) and not btn(right) then
+            plr.dx-=1
+        elseif btn(right) and not btn(left) then
+            plr.dx+=1
+        elseif plr.dx > 0 then
+            plr.dx = max(plr.dx-1,0)
+        elseif plr.dx < -0.5 then
+            plr.dx = min(plr.dx+1,0)
+        else
+            plr.dx=0
+        end
     end
-
 end
 
 function mapcollide(obj, dir, flag)
