@@ -6,7 +6,7 @@ __lua__
 left,right,up,down,fire1,fire2=0,1,2,3,4,5
 black,dark_blue,dark_purple,dark_green,brown,dark_gray,light_gray,white,red,orange,yellow,green,blue,indigo,pink,peach=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 
-debug = true
+debug = false
 
 --Game Constants
 coyotemax = 2
@@ -16,6 +16,7 @@ spallist = {{black, green, dark_gray, green}, {dark_purple, pink, dark_gray, pin
 xmin = 8
 xmax = 112
 ymax = 16
+gamename = "neocity"
 
 function _init()
     debuginit()
@@ -65,6 +66,7 @@ function _draw()
     rectfill(0,120,128,128, black)
     if (plummeting < 0) scorecolor = red else scorecolor = white
     print("score:"..maxscore, 1, 122, scorecolor)
+    printr(gamename, 128, 122, scorecolor)
     debugdraw()
 end
 
@@ -116,26 +118,34 @@ function initplr()
             dist=0
             if rx > 0 then
                 if plr.x % 8 == 0 then
-                    if mapcollide(plr, right, 0) or plr.x >= xmax then
+                    debugprint("check x+")
+                    if plr.x >= xmax or mapcollide(plr, right, 0) then
+                        debugprint("wall")
                         plr.dx=0
                         rx=0
                         dist=0
                     else
+                        debugprint("no wall")
                         dist = min(8,rx)
                     end
                 else
+                    debugprint("no check x+")
                     dist = min(rx, 8 - (plr.x % 8))
                 end
             elseif rx < 0 then
                 if plr.x % 8 == 0 then
+                    debugprint("check x-")
                     if mapcollide(plr, left, 0) or plr.x <= xmin then
+                        debugprint("wall")
                         plr.dx=0
                         rx=0
                         dist=0
                     else
+                        debugprint("no wall")
                         dist = max(-8,rx)
                     end
                 else
+                    debugprint("no check x-")
                     dist = max(rx, 0 - (plr.x % 8))
                 end
             end
@@ -324,19 +334,25 @@ function mapcollide(obj, dir, flag)
     x2\=8
     y2\=8
 
-    debugbox(x1,y1)
-    debugbox(x2,y2)
+    y1i = y1
+    y2i = y2
+    if dir==left or dir==right then
+        debugbox(x1,y1)
+        debugbox(x2,y2)
+    end
 
     y1 = y1%3
     y2 = y2%3
     
-    for i=x1,x2 do
-        for j=y1,y2 do
+    for i=min(x1,x2), max(x1,x2) do
+        for j=min(y1,y2), max(y1,y2) do
             if (fget(mget(i,j), flag)) then
+                debugprint("true")
                 return true
             end
         end
     end
+    debugprint("false")
     return false
 end
 
