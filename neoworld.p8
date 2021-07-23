@@ -32,7 +32,7 @@ function initmenu()
     menu.draw = function()
         printc("select a gamemode", 64, 9, white)
         for i=0,2 do
-            logodraw(i, 64, 104 - 40*i, i != menu.hovering)
+            logodraw(i, 64, 91 - 36*i, i != menu.hovering)
         end
     end
     menu.update = function()
