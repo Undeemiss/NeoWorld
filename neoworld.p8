@@ -6,36 +6,51 @@ __lua__
 left,right,up,down,fire1,fire2=0,1,2,3,4,5
 black,dark_blue,dark_purple,dark_green,brown,dark_gray,light_gray,white,red,orange,yellow,green,blue,indigo,pink,peach=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 
-debug = false
-
 --Game Constants
 xmin = 8
 xmax = 112
 ymax = 16
+taglines = {"face the cruelty of gravity", "neither hope nor despair", "relax as you climb effortlessly"}
 
 function _init()
-    debuginit()
+
+    cartdata("undeemiss_neoworld")
+    highscores = {}
+    for i=0,2 do
+        highscores[i] = dget(i)
+    end
+
     initmenu()
 end
 
 function initmenu()
-    inmenu = true
-    menu = {}
+    menu = {hovering=1}
     menu.open = function()
         inmenu = true
+        menu.hovering = 1
     end
     menu.draw = function()
-        print("menu.draw()", 0,0, white)
-    end
-    menu.update = function()
-        if btn(down) then
-            inithell()
-        elseif btn(left) then
-            initcity()
-        elseif btn(up) then
-            initheaven()
+        printc("select a gamemode", 64, 9, white)
+        for i=0,2 do
+            logodraw(i, 64, 104 - 40*i, i != menu.hovering)
         end
     end
+    menu.update = function()
+        if btnp(fire1) then
+            if menu.hovering == 0 then
+                inithell()
+            elseif menu.hovering == 1 then
+                initcity()
+            elseif menu.hovering == 2 then
+                initheaven()
+            end
+        elseif btnp(down) then
+            menu.hovering = (menu.hovering - 1) % 3
+        elseif btnp(up) then
+            menu.hovering = (menu.hovering + 1) % 3
+        end
+    end
+    menu.open()
 end
 
 function initneo() --Generic initialization code for all three modes
@@ -113,10 +128,12 @@ function _update()
             bgsign:update()
         end
         maxscore = max(score, maxscore)
-        if maxscore > score then
-            plummeting -= 1
-        elseif plummeting > 0 then
-            plummeting = 5
+        if plummeting > 0 then
+            if maxscore > score then
+                plummeting -= 1
+            else
+                plummeting = 5
+            end
         end
         cam:chase(plr, 0, -32768.0, 0, -88)
     end
@@ -143,11 +160,45 @@ function _draw()
     
         --UI Rendering
         rectfill(0,120,128,128, black)
-        if (plummeting < 0) scorecolor = red else scorecolor = white
+        if (plummeting == 0) scorecolor = red else scorecolor = white
         print("score:"..maxscore, 1, 122, scorecolor)
         printr(gamename, 128, 122, scorecolor)
-        debugdraw()
     end
+end
+
+function logodraw(id, x, y, silhouette) --id: 0=hell, 1=city, 2=heaven; silhouette: false=filled, true=empty
+    local lpal, lseq, offset, textclr
+    if id==0 then
+        lpal = {red, brown, orange}
+        lseq = {54, 50, 55, 51, 50, 53, 53}
+    elseif id==1 then
+        lpal = {light_gray, dark_gray, white}
+        lseq = {54, 50, 55, 49, 52, 56, 58}
+    elseif id==2 then
+        lpal = {indigo, dark_purple, light_gray}
+        lseq = {54, 50, 55, 51, 50, 48, 57, 50, 54}
+    end
+    offset = (7*count(lseq)+1)/2
+
+    if silhouette then
+        palt(1, true)
+        pal(2, light_gray)
+        palt(3, true)
+        textclr = light_gray
+    else
+        for i=1,3 do
+            pal(i, lpal[i])
+        end
+        textclr = lpal[2]
+    end
+
+    for i=1,count(lseq) do
+        spr(lseq[i], x - offset + (7*(i-1)), y)
+    end
+    printc(taglines[id+1], x, y+9, textclr)
+    printc("hi-score:"..highscores[id], x, y+15, textclr)
+
+    pal()
 end
 
 function initplr()
@@ -172,7 +223,7 @@ function initplr()
         pal()
     end
     plr.update = function()
-        if plummeting<0 then
+        if plummeting==0 then
             if plr.x >= 64 and plr.x < 88 then
                 plr.dx += 2
             elseif plr.x >= 40 and plr.x<64 then
@@ -266,7 +317,11 @@ function initplr()
         plr.x = min(max(plr.x,xmin),xmax)
         plr.y = min(plr.y,ymax)
         score = (20 - plr.y)\24
-        if plr.y==ymax then
+        if plummeting == 0 and plr.y==ymax then
+            if maxscore > highscores[gm] then
+                dset(gm, maxscore)
+                highscores[gm] = maxscore
+            end
             plummeting = 5
             maxscore = 0
         end
@@ -362,10 +417,10 @@ function initbgsign(signmode) --0=Neon Sign, 1=Cloud
 end
 
 function input()
-    if btn(fire2) and maxscore==0 then
+    if btnp(fire2) and maxscore==0 then
         menu.open()
     else
-        if btn(fire1) and (plr.coyoteframes > 0 or plr.y==16 or mapcollide(plr, down, 0)) then
+        if btnp(fire1) and (plr.coyoteframes > 0 or plr.y==16 or mapcollide(plr, down, 0)) then
             plr.coyoteframes = 0
             plr.dy = -8
         end
@@ -446,47 +501,6 @@ function printr(text, x, y, color) --Identical to print(text, x, y, color), but 
     print(text, x-w, y, color)
 end
 
-function debuginit()
-	debugboxlist = {}
-	debugpointlist = {}
-    debugtextlist = {}
-	function debugbox(x,y,c)
-        if debug then
-		    c = c or yellow
-		    add(debugboxlist,{x*8,y*8,c})
-        end
-	end
-		function debugpoint(x,y,c)
-        if debug then
-		    c = c or white
-		    add(debugpointlist,{x,y,c})
-        end
-	end
-    function debugprint(string)
-        if (debug) add(debugtextlist, {string, count(debugtextlist)*8})
-    end
-    function debugval(name, val)
-        debugprint(name.." : "..tostring(val))
-    end
-	function debugdraw()
-		if debug then
-			for box in all(debugboxlist) do
-				rect(box[1]-cam.x,box[2]-cam.y,box[1]-cam.x+7,box[2]-cam.y+7,box[3])
-			end
-			debugboxlist = {}
-			for point in all(debugpointlist) do
-				pset(point[1]-cam.x,point[2]-cam.y,point[3])
-			end
-			debugpointlist = {}
-            
-            for line in all(debugtextlist) do
-                print(line[1], 0, line[2], white)
-            end
-            debugtextlist = {}
-		end
-	end
-end
-
 __gfx__
 aaaaaaaa004444000000000000222200000000000000000000000000000000004955455444555554444444544455455499944949449944940000000000000000
 a7799779004444000000000000222200000000000000000000000000000000004484884444888884498888894444444448884484484448490000000000000000
@@ -512,8 +526,16 @@ a7199179074444700000000000222200000000000000000000000000000000004484858944558589
 521432143214321432143215006656665565556566665000000000000000000072222e2744344434443444344434443444344434000000000000000000000000
 055555555555555555555550000666650000000055650000000000000000000072222e2744444444444444444444444444444445000000000000000000000000
 00000000000000000000000000006550000000000000000000000000000000007222e22744444444444444440545445545545550000000000000000000000000
+00222200002222000222222002200220022222200220000002200220002222000222222002200220022002200000000000000000000000000000000000000000
+02313120023131202331331223322312233133122332000023322312023131202331331223322312233223120000000000000000000000000000000000000000
+23122112231111122311111223122112231111122312000023112112231111122311111223122312231221120000000000000000000000000000000000000000
+23122312231221122111222021111112022112202112000021111112231221120221122021122112021111200000000000000000000000000000000000000000
+21113112211222222311112023111112022312202312222023111112211223120023120002122320002312000000000000000000000000000000000000000000
+23111112231133122111222021122112231111122111111221121112231131120023120002113120002312000000000000000000000000000000000000000000
+21122112021111202311111223122112231111122311111223122112021111200021120000211200002112000000000000000000000000000000000000000000
+02200220002222000222222002200220022222200222222002200220002222000002200000022000000220000000000000000000000000000000000000000000
 __gff__
-0000000000000101000000000101000000000000000000000000000101000000000000000000000000000001010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000101000000000000000000000000000101000000000000000000000000000001010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 080000000000000c0d00000000000008180000000000001b1c00000000000018280000000000002b2c000000000000280000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
